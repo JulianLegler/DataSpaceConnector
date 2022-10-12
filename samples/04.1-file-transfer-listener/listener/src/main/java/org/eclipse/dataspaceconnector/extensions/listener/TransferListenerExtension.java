@@ -14,17 +14,43 @@
 
 package org.eclipse.dataspaceconnector.extensions.listener;
 
+import org.eclipse.dataspaceconnector.api.datamanagement.asset.AssetApiExtension;
+import org.eclipse.dataspaceconnector.api.datamanagement.asset.service.AssetService;
+import org.eclipse.dataspaceconnector.api.datamanagement.asset.service.AssetServiceImpl;
+import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
+import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
+import org.eclipse.dataspaceconnector.spi.observe.asset.AssetListener;
+import org.eclipse.dataspaceconnector.spi.observe.asset.AssetObservable;
+import org.eclipse.dataspaceconnector.spi.observe.asset.AssetObservableImpl;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
 import org.eclipse.dataspaceconnector.spi.transfer.observe.TransferProcessObservable;
 
+//import org.eclipse.dataspaceconnector.api.datamangement.*;
+
 public class TransferListenerExtension implements ServiceExtension {
+
+    @Inject
+    private TransferProcessObservable transferProcessObservable;
+
+    // Needs to be injected to get Access to AssetObservable
+    @Inject
+    private AssetService assetService;
+
 
     @Override
     public void initialize(ServiceExtensionContext context) {
-        var transferProcessObservable = context.getService(TransferProcessObservable.class);
+
+
+        //var assetObservable = ((AssetServiceImpl) assetService).observable;
+
+        var assetObservable = context.getService(AssetObservable.class);
+
         var monitor = context.getMonitor();
 
+
+
         transferProcessObservable.registerListener(new MarkerFileCreator(monitor));
+        assetObservable.registerListener(new BlockchainAssetCreator(monitor));
     }
 }

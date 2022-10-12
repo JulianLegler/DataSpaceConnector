@@ -31,6 +31,7 @@ import org.eclipse.dataspaceconnector.spi.WebService;
 import org.eclipse.dataspaceconnector.spi.asset.AssetIndex;
 import org.eclipse.dataspaceconnector.spi.contract.negotiation.store.ContractNegotiationStore;
 import org.eclipse.dataspaceconnector.spi.event.EventRouter;
+import org.eclipse.dataspaceconnector.spi.observe.asset.AssetObservable;
 import org.eclipse.dataspaceconnector.spi.observe.asset.AssetObservableImpl;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtensionContext;
@@ -78,9 +79,11 @@ public class AssetApiExtension implements ServiceExtension {
 
         var assetObservable = new AssetObservableImpl();
         assetObservable.registerListener(new AssetEventListener(clock, eventRouter));
+        context.registerService(AssetObservable.class, assetObservable);
 
         var assetService = new AssetServiceImpl(assetIndex, contractNegotiationStore, transactionContext, assetObservable);
         context.registerService(AssetService.class, assetService);
+
 
         transformerRegistry.register(new AssetRequestDtoToAssetTransformer());
         transformerRegistry.register(new DataAddressDtoToDataAddressTransformer());

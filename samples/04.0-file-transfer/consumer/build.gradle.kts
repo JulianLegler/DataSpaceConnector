@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":core:control-plane:control-plane-core"))
 
     implementation(project(":extensions:common:api:observability"))
+    implementation(project(":extensions:common:api:api-core"))
 
     implementation(project(":extensions:common:configuration:filesystem-configuration"))
     implementation(project(":extensions:common:iam:iam-mock"))
@@ -35,6 +36,12 @@ dependencies {
     implementation(project(":extensions:control-plane:api:data-management"))
 
     implementation(project(":data-protocols:ids"))
+
+    implementation(project(":core:federated-catalog:federated-catalog-core"))
+
+    implementation(project(":samples:04.1-file-transfer-listener:listener"))
+    api(project(":spi:control-plane:control-plane-spi"))
+    api(project(":spi"))
 }
 
 application {

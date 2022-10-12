@@ -65,6 +65,8 @@ public class ExecutionManager {
     public void executePlan(ExecutionPlan plan) {
         plan.run(() -> {
 
+            monitor.info(message("Just here to hijack this worker ... nothing to see ... "));
+
             monitor.info(message("Run pre-execution task"));
             runPreExecution();
 

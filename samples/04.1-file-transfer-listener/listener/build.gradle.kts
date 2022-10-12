@@ -19,5 +19,12 @@ plugins {
 
 dependencies {
     api(project(":spi:control-plane:control-plane-spi"))
+    api(project(":spi:common:core-spi"))
+    api(project(":spi:control-plane:data-plane-transfer-spi"))
+    api(project(":spi:control-plane:control-plane-spi"))
+    api(project(":spi:control-plane:contract-spi"))
     implementation(project(":extensions:common:http"))
+    api(project(":extensions:control-plane:api:data-management"))
+    implementation(project(":extensions:control-plane:api:data-management"))
+    api(project(":spi"))
 }
