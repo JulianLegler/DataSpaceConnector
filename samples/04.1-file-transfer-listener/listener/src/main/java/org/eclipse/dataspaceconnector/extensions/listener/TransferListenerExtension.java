@@ -17,9 +17,11 @@ package org.eclipse.dataspaceconnector.extensions.listener;
 import org.eclipse.dataspaceconnector.api.datamanagement.asset.AssetApiExtension;
 import org.eclipse.dataspaceconnector.api.datamanagement.asset.service.AssetService;
 import org.eclipse.dataspaceconnector.api.datamanagement.asset.service.AssetServiceImpl;
+import org.eclipse.dataspaceconnector.api.datamanagement.contractdefinition.service.ContractDefinitionService;
 import org.eclipse.dataspaceconnector.api.datamanagement.policy.service.PolicyDefinitionService;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
 import org.eclipse.dataspaceconnector.spi.asset.AssetIndex;
+import org.eclipse.dataspaceconnector.spi.contract.definition.observe.ContractDefinitionObservable;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.observe.asset.AssetListener;
 import org.eclipse.dataspaceconnector.spi.observe.asset.AssetObservable;
@@ -45,6 +47,9 @@ public class TransferListenerExtension implements ServiceExtension {
     private PolicyDefinitionService policyDefinitionService;
 
     @Inject
+    private ContractDefinitionService contractDefinitionService;
+
+    @Inject
     private AssetIndex assetIndex;
 
 
@@ -58,6 +63,8 @@ public class TransferListenerExtension implements ServiceExtension {
 
         var policyObservable = context.getService(PolicyDefinitionObservable.class);
 
+        var contractObservable = context.getService(ContractDefinitionObservable.class);
+
         var monitor = context.getMonitor();
 
 
@@ -67,5 +74,6 @@ public class TransferListenerExtension implements ServiceExtension {
 
         policyObservable.registerListener(new BlockchainPolicyCreator(monitor));
 
+        contractObservable.registerListener(new BlockchainContractCreator(monitor));
     }
 }

@@ -26,6 +26,7 @@ import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Extension;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provides;
 import org.eclipse.dataspaceconnector.spi.WebService;
+import org.eclipse.dataspaceconnector.spi.contract.definition.observe.ContractDefinitionObservable;
 import org.eclipse.dataspaceconnector.spi.contract.definition.observe.ContractDefinitionObservableImpl;
 import org.eclipse.dataspaceconnector.spi.contract.offer.store.ContractDefinitionStore;
 import org.eclipse.dataspaceconnector.spi.event.EventRouter;
@@ -75,6 +76,7 @@ public class ContractDefinitionApiExtension implements ServiceExtension {
 
         var contractDefinitionObservable = new ContractDefinitionObservableImpl();
         contractDefinitionObservable.registerListener(new ContractDefinitionEventListener(clock, eventRouter));
+        context.registerService(ContractDefinitionObservable.class, contractDefinitionObservable);
 
         var service = new ContractDefinitionServiceImpl(contractDefinitionStore, transactionContext, contractDefinitionObservable);
         context.registerService(ContractDefinitionService.class, service);
