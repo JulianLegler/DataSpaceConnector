@@ -27,6 +27,9 @@ import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Provides;
 import org.eclipse.dataspaceconnector.spi.WebService;
 import org.eclipse.dataspaceconnector.spi.contract.offer.store.ContractDefinitionStore;
 import org.eclipse.dataspaceconnector.spi.event.EventRouter;
+import org.eclipse.dataspaceconnector.spi.observe.asset.AssetObservable;
+import org.eclipse.dataspaceconnector.spi.policy.PolicyDefinition;
+import org.eclipse.dataspaceconnector.spi.policy.observe.PolicyDefinitionObservable;
 import org.eclipse.dataspaceconnector.spi.policy.observe.PolicyDefinitionObservableImpl;
 import org.eclipse.dataspaceconnector.spi.policy.store.PolicyDefinitionStore;
 import org.eclipse.dataspaceconnector.spi.system.ServiceExtension;
@@ -71,6 +74,7 @@ public class PolicyDefinitionApiExtension implements ServiceExtension {
 
         var policyDefinitionObservable = new PolicyDefinitionObservableImpl();
         policyDefinitionObservable.registerListener(new PolicyDefinitionEventListener(clock, eventRouter));
+        context.registerService(PolicyDefinitionObservable.class, policyDefinitionObservable);
 
         var service = new PolicyDefinitionServiceImpl(transactionContext, policyStore, contractDefinitionStore, policyDefinitionObservable);
         context.registerService(PolicyDefinitionService.class, service);
