@@ -18,6 +18,7 @@ import org.eclipse.dataspaceconnector.api.datamanagement.asset.AssetApiExtension
 import org.eclipse.dataspaceconnector.api.datamanagement.asset.service.AssetService;
 import org.eclipse.dataspaceconnector.api.datamanagement.asset.service.AssetServiceImpl;
 import org.eclipse.dataspaceconnector.runtime.metamodel.annotation.Inject;
+import org.eclipse.dataspaceconnector.spi.asset.AssetIndex;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.observe.asset.AssetListener;
 import org.eclipse.dataspaceconnector.spi.observe.asset.AssetObservable;
@@ -37,6 +38,9 @@ public class TransferListenerExtension implements ServiceExtension {
     @Inject
     private AssetService assetService;
 
+    @Inject
+    private AssetIndex assetIndex;
+
 
     @Override
     public void initialize(ServiceExtensionContext context) {
@@ -51,6 +55,7 @@ public class TransferListenerExtension implements ServiceExtension {
 
 
         transferProcessObservable.registerListener(new MarkerFileCreator(monitor));
-        assetObservable.registerListener(new BlockchainAssetCreator(monitor));
+        assetObservable.registerListener(new BlockchainAssetCreator(monitor, assetService, assetIndex));
+
     }
 }
