@@ -14,6 +14,13 @@ import org.eclipse.dataspaceconnector.spi.types.domain.asset.Asset;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
 public class BlockchainAssetCreator implements AssetListener {
 
 
@@ -32,7 +39,28 @@ public class BlockchainAssetCreator implements AssetListener {
         this.stateCounter = 0;
     }
 
-    private void writeToContract(Asset asset) {
+    private static class ReturnObject {
+        public String status;
+        public String hash;
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public String getHash() {
+            return hash;
+        }
+
+        public void setHash(String hash) {
+            this.hash = hash;
+        }
+    }
+
+    private String transformToJSON(Asset asset) {
 
         monitor.info(String.format("[%s] Asset: '%s' created in EDC, start now with Blockchain related steps ...", this.getClass().getSimpleName(), asset.getName()));
 
@@ -46,64 +74,68 @@ public class BlockchainAssetCreator implements AssetListener {
         AssetRequestDto assetRequestDto = AssetRequestDto.Builder.newInstance().id(asset.getId()).properties(asset.getProperties()).build();
         DataAddressDto dataAddressDto = DataAddressDto.Builder.newInstance().properties(dataAddress.getProperties()).build();
         AssetEntryDto assetEntryDto = AssetEntryDto.Builder.newInstance().asset(assetRequestDto).dataAddress(dataAddressDto).build();
+
+        String jsonString = "";
         // Format them to JSON and print them for debugging. Change later, for now the system out println looks prettier than using monitor
         try {
             //System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(asset));
             //System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(dataAddress));
-            System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(assetEntryDto));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-
-
-
-        /*
-        String agreementId = process.getDataRequest().getContractId();
-        String consumerAddress = process.getDataRequest().getConnectorAddress();
-        String producerAddress = "producer placeholder";
-        String assetId = process.getDataRequest().getAssetId();
-        String unixTime = Long.toString(Instant.now().getEpochSecond());
-        String hashedContract = state;
-
-        PostObject body = new PostObject(consumerAddress, producerAddress, String.valueOf(this.stateCounter), unixTime, hashedContract, assetId);
-
-        ObjectMapper ow = new ObjectMapper();
-        String jsonString;
-        try {
-            jsonString = ow.writeValueAsString(body);
+            jsonString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(assetEntryDto);
             System.out.println(jsonString);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
 
+        return jsonString;
+    }
+
+    private ReturnObject sendToSmartContract(String jsonString) {
+        monitor.debug(String.format("[%s] Sending data to Smart Contract, this may take some time ...", this.getClass().getSimpleName()));
+        String returnJson = "";
+        ReturnObject returnObject = null;
         try{
-            URL url = new URL("http://localhost:3000/contractAgreementMap/add");
+            URL url = new URL("http://localhost:3000/mint/asset");
             HttpURLConnection http = (HttpURLConnection)url.openConnection();
             http.setRequestMethod("POST");
             http.setDoOutput(true);
             http.setRequestProperty("Content-Type", "application/json");
 
-            //String data = "{\"consumerId\": \"" + consumerAddress + "\", \"producerId\": \"" + producerAddress + "\", \"transactionId\": \"" + agreementId + "\", \"hashedLog\": \"" + assetId + "\"}";
             byte[] out = jsonString.getBytes(StandardCharsets.UTF_8);
 
             OutputStream stream = http.getOutputStream();
             stream.write(out);
-            // dismiss http response
+
+            BufferedReader br = null;
+            if (100 <= http.getResponseCode() && http.getResponseCode() <= 399) {
+                br = new BufferedReader(new InputStreamReader(http.getInputStream()));
+            } else {
+                br = new BufferedReader(new InputStreamReader(http.getErrorStream()));
+            }
+
+            while ((returnJson = br.readLine()) != null) {
+                System.out.println(returnJson);
+                ObjectMapper mapper = new ObjectMapper();
+                returnObject = mapper.readValue(returnJson, ReturnObject.class);
+            }
+
             System.out.println(http.getResponseCode() + " " + http.getResponseMessage());
             http.disconnect();
         } catch(Exception e) {
             monitor.severe(e.toString());
         }
-        // increment state counter
-        this.stateCounter ++;
 
-         */
+        return returnObject;
     }
 
     @Override
     public void created(Asset asset) {
-        writeToContract(asset);
+        String jsonString = transformToJSON(asset);
+        ReturnObject returnObject = sendToSmartContract(jsonString);
+        if(returnObject == null) {
+            monitor.warning("Something went wrong during the Blockchain Asset creation of the Asset with id " + asset.getId());
+        } else {
+            System.out.printf("[%s] Created Asset %s and minted it successfully with the hash: %s", this.getClass().getSimpleName(), asset.getId(), returnObject.getHash());
+        }
     }
 
 
