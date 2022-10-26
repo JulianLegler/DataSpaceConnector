@@ -64,7 +64,7 @@ public class FederatedCatalogCacheExtension implements ServiceExtension {
 
     private ExecutionPlan executionPlan;
     private NodeQueryAdapterRegistryImpl nodeQueryAdapterRegistry;
-    private ExecutionManager executionManager;
+    private BlockchainExecutionManager executionManager;
     private CacheQueryAdapterRegistryImpl registry;
     private QueryEngineImpl queryEngine;
 
@@ -113,7 +113,7 @@ public class FederatedCatalogCacheExtension implements ServiceExtension {
         // by default only uses FC nodes that are not "self"
         nodeFilter = ofNullable(nodeFilter).orElse(node -> !node.getName().equals(context.getConnectorId()));
 
-        executionManager = ExecutionManager.Builder.newInstance()
+        executionManager = BlockchainExecutionManager.Builder.newInstance()
                 .monitor(monitor)
                 .preExecutionTask(() -> {
                     store.deleteExpired();

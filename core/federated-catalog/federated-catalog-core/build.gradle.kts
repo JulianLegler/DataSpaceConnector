@@ -43,6 +43,9 @@ dependencies {
     testImplementation(project(":data-protocols:ids:ids-spi"))
     testImplementation("org.awaitility:awaitility:${awaitility}")
 
+    implementation(project(":samples:04.0-file-transfer:transfer-file"))
+    implementation(project(":samples:04.1-file-transfer-listener:listener"))
+
 }
 
 publishing {

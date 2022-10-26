@@ -21,6 +21,7 @@ public class BlockchainPolicyCreator implements PolicyDefinitionListener {
     @Override
     public void created(PolicyDefinition policyDefinition) {
         String jsonString = transformToJSON(policyDefinition);
+        System.out.println(jsonString);
         ReturnObject returnObject = BlockchainHelper.sendToPolicySmartContract(jsonString, monitor);
         if(returnObject == null) {
             monitor.warning("Something went wrong during the Blockchain Policy creation of the Policy with id " + policyDefinition.getId());

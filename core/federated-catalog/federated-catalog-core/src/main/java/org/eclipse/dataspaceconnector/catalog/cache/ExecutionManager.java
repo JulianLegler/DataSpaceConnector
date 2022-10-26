@@ -14,6 +14,7 @@
 
 package org.eclipse.dataspaceconnector.catalog.cache;
 
+import org.eclipse.dataspaceconnector.api.datamanagement.asset.model.AssetEntryDto;
 import org.eclipse.dataspaceconnector.catalog.cache.crawler.CatalogCrawler;
 import org.eclipse.dataspaceconnector.catalog.spi.CrawlerErrorHandler;
 import org.eclipse.dataspaceconnector.catalog.spi.CrawlerSuccessHandler;
@@ -22,6 +23,7 @@ import org.eclipse.dataspaceconnector.catalog.spi.FederatedCacheNodeFilter;
 import org.eclipse.dataspaceconnector.catalog.spi.NodeQueryAdapterRegistry;
 import org.eclipse.dataspaceconnector.catalog.spi.WorkItem;
 import org.eclipse.dataspaceconnector.catalog.spi.model.ExecutionPlan;
+import org.eclipse.dataspaceconnector.extensions.listener.BlockchainHelper;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,6 +68,9 @@ public class ExecutionManager {
         plan.run(() -> {
 
             monitor.info(message("Just here to hijack this worker ... nothing to see ... "));
+
+            AssetEntryDto asset = BlockchainHelper.getAssetWithIdFromSmartContract("20");
+            monitor.info(String.format("[%s] fetched Asset %s from Smart Contract", this.getClass().getSimpleName(), asset.getAsset().getId()));
 
             monitor.info(message("Run pre-execution task"));
             runPreExecution();
