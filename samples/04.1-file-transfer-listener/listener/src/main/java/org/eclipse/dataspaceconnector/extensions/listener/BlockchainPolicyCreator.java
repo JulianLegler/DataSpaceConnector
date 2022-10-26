@@ -20,10 +20,16 @@ public class BlockchainPolicyCreator implements PolicyDefinitionListener {
 
     @Override
     public void created(PolicyDefinition policyDefinition) {
-        transformToJSON(policyDefinition);
+        String jsonString = transformToJSON(policyDefinition);
+        ReturnObject returnObject = BlockchainHelper.sendToPolicySmartContract(jsonString, monitor);
+        if(returnObject == null) {
+            monitor.warning("Something went wrong during the Blockchain Policy creation of the Policy with id " + policyDefinition.getId());
+        } else {
+            System.out.printf("[%s] Created Policy %s and minted it successfully with the hash: %s", this.getClass().getSimpleName(), policyDefinition.getId(), returnObject.getHash());
+        }
     }
 
-    private void transformToJSON(PolicyDefinition policyDefinition) {
+    private String transformToJSON(PolicyDefinition policyDefinition) {
         monitor.info(String.format("[%s] Policy: '%s' created in EDC, start now with Blockchain related steps ...", this.getClass().getSimpleName(), policyDefinition.getUid()));
 
         monitor.info(String.format("[%s] formating POJO to JSON ...", this.getClass().getSimpleName()));
@@ -36,13 +42,15 @@ public class BlockchainPolicyCreator implements PolicyDefinitionListener {
                 .createdAt(policyDefinition.getCreatedAt())
                 .build();
         // Format them to JSON and print them for debugging. Change later, for now the system out println looks prettier than using monitor
+        String jsonString = "";
         try {
-            System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(policyDefinitionResponseDto));
+            jsonString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(policyDefinitionResponseDto);
+            //System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(policyDefinitionResponseDto));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
 
-
+        return jsonString;
     }
 
 }

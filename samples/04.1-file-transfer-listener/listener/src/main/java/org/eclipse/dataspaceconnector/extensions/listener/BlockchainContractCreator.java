@@ -25,10 +25,20 @@ public class BlockchainContractCreator implements ContractDefinitionListener {
 
     @Override
     public void created(ContractDefinition contractDefinition) {
-        transformToJSON(contractDefinition);
+        String jsonString = transformToJSON(contractDefinition);
+        System.out.println(jsonString);
+        monitor.warning("Send to smart contract not implemented for Contract Definition!");
+        /*
+        ReturnObject returnObject = BlockchainHelper.sendToSmartContract(jsonString, monitor);
+        if(returnObject == null) {
+            monitor.warning("Something went wrong during the Blockchain Contract Definition creation of the Contract with id " + contractDefinition.getId());
+        } else {
+            System.out.printf("[%s] Created Contract %s and minted it successfully with the hash: %s", this.getClass().getSimpleName(), contractDefinition.getId(), returnObject.getHash());
+        }
+         */
     }
 
-    private void transformToJSON(ContractDefinition contractDefinition) {
+    private String transformToJSON(ContractDefinition contractDefinition) {
         monitor.info(String.format("[%s] ContractDefinition: for '%s' and '%s' created in EDC, start now with Blockchain related steps ...", this.getClass().getSimpleName(), contractDefinition.getContractPolicyId(), contractDefinition.getAccessPolicyId()));
 
         monitor.info(String.format("[%s] formating POJO to JSON ...", this.getClass().getSimpleName()));
@@ -54,12 +64,13 @@ public class BlockchainContractCreator implements ContractDefinitionListener {
                 .criteria(criterionDtoList).build();
 
 
+        String jsonString = "";
         try {
-
-            System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(contractDefinitionResponseDto));
+            jsonString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(contractDefinitionResponseDto);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+        return jsonString;
     }
 
 }
