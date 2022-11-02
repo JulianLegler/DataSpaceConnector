@@ -30,13 +30,13 @@ public class BlockchainContractCreator implements ContractDefinitionListener {
         if(returnObject == null) {
             monitor.warning("Something went wrong during the Blockchain Contract Definition creation of the Contract with id " + contractDefinition.getId());
         } else {
-            System.out.printf("[%s] Created Contract %s and minted it successfully with the hash: %s", this.getClass().getSimpleName(), contractDefinition.getId(), returnObject.getHash());
+            System.out.printf("[%s] Created Contract %s and minted it successfully with the hash: %s\n", this.getClass().getSimpleName(), contractDefinition.getId(), returnObject.getHash());
         }
 
     }
 
     private String transformToJSON(ContractDefinition contractDefinition) {
-        monitor.info(String.format("[%s] ContractDefinition: for '%s' and '%s' created in EDC, start now with Blockchain related steps ...", this.getClass().getSimpleName(), contractDefinition.getContractPolicyId(), contractDefinition.getAccessPolicyId()));
+        monitor.info(String.format("[%s] ContractDefinition: for '%s' and '%s' targeting '%s' created in EDC, start now with Blockchain related steps ...", this.getClass().getSimpleName(), contractDefinition.getContractPolicyId(), contractDefinition.getAccessPolicyId(), contractDefinition.getSelectorExpression().getCriteria().get(0).getOperandRight()));
 
         monitor.info(String.format("[%s] formating POJO to JSON ...", this.getClass().getSimpleName()));
 

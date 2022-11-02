@@ -1,13 +1,12 @@
 package org.eclipse.dataspaceconnector.extensions.listener;
 
-import org.eclipse.dataspaceconnector.api.datamanagement.asset.model.AssetEntryDto;
-import org.eclipse.dataspaceconnector.api.datamanagement.policy.model.PolicyDefinitionResponseDto;
+import org.eclipse.dataspaceconnector.api.datamanagement.contractdefinition.model.ContractDefinitionResponseDto;
 
-public class TokenizedPolicyDefinition {
+public class TokenizedContract {
     String token_id;
     String name;
     String decimals;
-    PolicyDefinitionResponseDto tokenData;
+    ContractDefinitionResponseDto tokenData;
 
     public String getToken_id() {
         return token_id;
@@ -33,11 +32,11 @@ public class TokenizedPolicyDefinition {
         this.decimals = decimals;
     }
 
-    public PolicyDefinitionResponseDto getTokenData() {
+    public ContractDefinitionResponseDto getTokenData() {
         return tokenData;
     }
 
-    public void setTokenData(PolicyDefinitionResponseDto tokenData) {
+    public void setTokenData(ContractDefinitionResponseDto tokenData) {
         this.tokenData = tokenData;
     }
 }

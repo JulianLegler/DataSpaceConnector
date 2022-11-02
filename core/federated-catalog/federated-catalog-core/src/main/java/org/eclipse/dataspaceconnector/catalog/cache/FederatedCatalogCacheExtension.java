@@ -124,6 +124,7 @@ public class FederatedCatalogCacheExtension implements ServiceExtension {
                 .onSuccess(this::persist)
                 .nodeDirectory(directory)
                 .nodeFilterFunction(nodeFilter)
+                .nodeStore(store)
                 .build();
     }
 

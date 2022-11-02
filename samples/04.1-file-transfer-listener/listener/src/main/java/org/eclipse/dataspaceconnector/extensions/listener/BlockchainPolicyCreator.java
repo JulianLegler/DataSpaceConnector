@@ -26,14 +26,14 @@ public class BlockchainPolicyCreator implements PolicyDefinitionListener {
         if(returnObject == null) {
             monitor.warning("Something went wrong during the Blockchain Policy creation of the Policy with id " + policyDefinition.getId());
         } else {
-            System.out.printf("[%s] Created Policy %s and minted it successfully with the hash: %s", this.getClass().getSimpleName(), policyDefinition.getId(), returnObject.getHash());
+            System.out.printf("[%s] Created Policy %s and minted it successfully with the hash: %s\n", this.getClass().getSimpleName(), policyDefinition.getId(), returnObject.getHash());
         }
     }
 
     private String transformToJSON(PolicyDefinition policyDefinition) {
-        monitor.info(String.format("[%s] Policy: '%s' created in EDC, start now with Blockchain related steps ...", this.getClass().getSimpleName(), policyDefinition.getUid()));
+        monitor.info(String.format("[%s] Policy: '%s' created in EDC, start now with Blockchain related steps ...\n", this.getClass().getSimpleName(), policyDefinition.getUid()));
 
-        monitor.info(String.format("[%s] formating POJO to JSON ...", this.getClass().getSimpleName()));
+        monitor.info(String.format("[%s] formating POJO to JSON ...\n", this.getClass().getSimpleName()));
 
         ObjectMapper mapper = new ObjectMapper();
 

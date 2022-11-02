@@ -1,5 +1,6 @@
 package org.eclipse.dataspaceconnector.extensions.listener;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataspaceconnector.api.datamanagement.asset.model.AssetEntryDto;
 import org.eclipse.dataspaceconnector.api.datamanagement.contractdefinition.model.ContractDefinitionResponseDto;
@@ -16,6 +17,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BlockchainHelper {
 
@@ -95,7 +98,7 @@ public class BlockchainHelper {
                     }
                     br.close();
 
-                    return mapper.readValue(sb.toString(), TokenziedAsset.class).getAssetData();
+                    return mapper.readValue(sb.toString(), TokenziedAsset.class).getTokenData();
             }
 
         } catch (MalformedURLException ex) {
@@ -114,7 +117,58 @@ public class BlockchainHelper {
         return null;
     }
 
-    public static ContractDefinitionResponseDto getAllContractDefinitionsFromSmartContract() {
+    public static List<ContractDefinitionResponseDto> getAllContractDefinitionsFromSmartContract() {
+        ContractDefinitionResponseDto contractDefinitionResponseDto = null;
+        ObjectMapper mapper = new ObjectMapper();
+
+        List<TokenizedContract> tokenziedContractList = new ArrayList<>();
+        List<ContractDefinitionResponseDto> contractDefinitionResponseDtoList = new ArrayList<>();
+
+        HttpURLConnection c = null;
+        try {
+            URL u = new URL("http://localhost:3000/all/contract");
+            c = (HttpURLConnection) u.openConnection();
+            c.setRequestMethod("GET");
+            c.setRequestProperty("Content-length", "0");
+            c.setUseCaches(false);
+            c.setAllowUserInteraction(false);
+            c.connect();
+            int status = c.getResponseCode();
+
+            switch (status) {
+                case 200:
+                case 201:
+                    BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line+"\n");
+                    }
+                    br.close();
+
+                     tokenziedContractList = mapper.readValue(sb.toString(), new TypeReference<List<TokenizedContract>>(){});
+
+                    for (TokenizedContract tokenizedContract: tokenziedContractList) {
+                        contractDefinitionResponseDtoList.add(tokenizedContract.getTokenData());
+                    }
+
+                    return contractDefinitionResponseDtoList;
+            }
+
+
+        } catch (MalformedURLException ex) {
+            System.out.println(ex);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        } finally {
+            if (c != null) {
+                try {
+                    c.disconnect();
+                } catch (Exception ex) {
+                    System.out.println(ex);
+                }
+            }
+        }
         return null;
     }
 
@@ -144,8 +198,117 @@ public class BlockchainHelper {
                     }
                     br.close();
 
-                    return mapper.readValue(sb.toString(), TokenizedPolicyDefinition.class).getPolicyData();
+                    return mapper.readValue(sb.toString(), TokenizedPolicyDefinition.class).getTokenData();
             }
+
+        } catch (MalformedURLException ex) {
+            System.out.println(ex);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        } finally {
+            if (c != null) {
+                try {
+                    c.disconnect();
+                } catch (Exception ex) {
+                    System.out.println(ex);
+                }
+            }
+        }
+        return null;
+    }
+
+    public static List<AssetEntryDto> getAllAssetsFromSmartContract() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        List<TokenziedAsset> tokenziedAssetList = new ArrayList<>();
+        List<AssetEntryDto> assetResponseDtoList = new ArrayList<>();
+
+        HttpURLConnection c = null;
+        try {
+            URL u = new URL("http://localhost:3000/all/asset");
+            c = (HttpURLConnection) u.openConnection();
+            c.setRequestMethod("GET");
+            c.setRequestProperty("Content-length", "0");
+            c.setUseCaches(false);
+            c.setAllowUserInteraction(false);
+            c.connect();
+            int status = c.getResponseCode();
+
+            switch (status) {
+                case 200:
+                case 201:
+                    BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line+"\n");
+                    }
+                    br.close();
+
+                    tokenziedAssetList = mapper.readValue(sb.toString(), new TypeReference<List<TokenziedAsset>>(){});
+
+                    for (TokenziedAsset tokenziedAsset: tokenziedAssetList) {
+                        assetResponseDtoList.add(tokenziedAsset.getTokenData());
+                    }
+
+                    return assetResponseDtoList;
+            }
+
+
+        } catch (MalformedURLException ex) {
+            System.out.println(ex);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        } finally {
+            if (c != null) {
+                try {
+                    c.disconnect();
+                } catch (Exception ex) {
+                    System.out.println(ex);
+                }
+            }
+        }
+        return null;
+
+    }
+
+    public static List<PolicyDefinitionResponseDto> getAllPolicyDefinitionsFromSmartContract() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        List<TokenizedPolicyDefinition> tokenizedPolicyDefinitionList = new ArrayList<>();
+        List<PolicyDefinitionResponseDto> policyDefinitionResponseDtoList = new ArrayList<>();
+
+        HttpURLConnection c = null;
+        try {
+            URL u = new URL("http://localhost:3000/all/policy");
+            c = (HttpURLConnection) u.openConnection();
+            c.setRequestMethod("GET");
+            c.setRequestProperty("Content-length", "0");
+            c.setUseCaches(false);
+            c.setAllowUserInteraction(false);
+            c.connect();
+            int status = c.getResponseCode();
+
+            switch (status) {
+                case 200:
+                case 201:
+                    BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line+"\n");
+                    }
+                    br.close();
+
+                    tokenizedPolicyDefinitionList = mapper.readValue(sb.toString(), new TypeReference<List<TokenizedPolicyDefinition>>(){});
+
+                    for (TokenizedPolicyDefinition tokenizedPolicyDefinition: tokenizedPolicyDefinitionList) {
+                        policyDefinitionResponseDtoList.add(tokenizedPolicyDefinition.getTokenData());
+                    }
+
+                    return policyDefinitionResponseDtoList;
+            }
+
 
         } catch (MalformedURLException ex) {
             System.out.println(ex);

@@ -6,7 +6,7 @@ public class TokenziedAsset {
     String token_id;
     String name;
     String decimals;
-    AssetEntryDto assetData;
+    AssetEntryDto tokenData;
 
     public String getToken_id() {
         return token_id;
@@ -32,11 +32,11 @@ public class TokenziedAsset {
         this.decimals = decimals;
     }
 
-    public AssetEntryDto getAssetData() {
-        return assetData;
+    public AssetEntryDto getTokenData() {
+        return tokenData;
     }
 
-    public void setAssetData(AssetEntryDto assetData) {
-        this.assetData = assetData;
+    public void setTokenData(AssetEntryDto tokenData) {
+        this.tokenData = tokenData;
     }
 }

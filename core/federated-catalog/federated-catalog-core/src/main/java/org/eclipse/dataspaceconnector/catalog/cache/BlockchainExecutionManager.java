@@ -13,6 +13,7 @@ import org.eclipse.dataspaceconnector.policy.model.Policy;
 import org.eclipse.dataspaceconnector.spi.EdcException;
 import org.eclipse.dataspaceconnector.spi.asset.AssetSelectorExpression;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
+import org.eclipse.dataspaceconnector.spi.query.Criterion;
 import org.eclipse.dataspaceconnector.spi.types.domain.asset.Asset;
 import org.eclipse.dataspaceconnector.spi.types.domain.catalog.Catalog;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.offer.ContractDefinition;
@@ -39,6 +40,7 @@ public class BlockchainExecutionManager {
     private int numCrawlers = 1;
     private NodeQueryAdapterRegistry nodeQueryAdapterRegistry;
     private CrawlerSuccessHandler successHandler;
+    private FederatedCacheStore store;
 
     private BlockchainExecutionManager() {
         nodeFilter = n -> true;
@@ -62,32 +64,84 @@ public class BlockchainExecutionManager {
     }
 
     private void doWork() {
-        AssetEntryDto assetDto = BlockchainHelper.getAssetWithIdFromSmartContract("20");
-        monitor.info(String.format("[%s] fetched Asset %s from Smart Contract", this.getClass().getSimpleName(), assetDto.getAsset().getId()));
 
-        PolicyDefinitionResponseDto policyDto = BlockchainHelper.getPolicyWithIdFromSmartContract("1");
-        monitor.info(String.format("[%s] fetched Asset %s from Smart Contract", this.getClass().getSimpleName(), policyDto.getPolicy().getTarget()));
+        Criterion criterion = new Criterion("asset:prop:id", "=", "test-document");
+        Criterion criterion1 = new Criterion("asset:prop:id", "=", "test-document-64");
+        ArrayList<Criterion> queryList = new ArrayList<>();
+        queryList.add(criterion);
+        queryList.add(criterion1);
+        List<ContractOffer> contractOfferListFromStorage = (List<ContractOffer>) store.query(queryList);
+        monitor.info(format("Fetched %d enties from local cataloge storage", contractOfferListFromStorage.size()));
 
-        //ContractDefinitionResponseDto contractDefinitionResponseDto = BlockchainHelper.getAllContractDefinitionsFromSmartContract();
+        List<AssetEntryDto> assetEntryDtoList = BlockchainHelper.getAllAssetsFromSmartContract();
+        monitor.info(String.format("[%s] fetched %d Assets from Smart Contract", this.getClass().getSimpleName(), assetEntryDtoList.size()));
+
+        List<PolicyDefinitionResponseDto> policyDefinitionResponseDtoList = BlockchainHelper.getAllPolicyDefinitionsFromSmartContract();
+        monitor.info(String.format("[%s] fetched %d Policies from Smart Contract", this.getClass().getSimpleName(), policyDefinitionResponseDtoList.size()));
+
+        //AssetEntryDto assetDto = BlockchainHelper.getAssetWithIdFromSmartContract("26");
+        //monitor.info(String.format("[%s] fetched Asset %s from Smart Contract", this.getClass().getSimpleName(), assetDto.getAsset().getId()));
+
+        //PolicyDefinitionResponseDto policyDto = BlockchainHelper.getPolicyWithIdFromSmartContract("4");
+        //monitor.info(String.format("[%s] fetched Policy %s from Smart Contract", this.getClass().getSimpleName(), policyDto.getId()));
+
+        List<ContractDefinitionResponseDto> contractDefinitionResponseDtoList = BlockchainHelper.getAllContractDefinitionsFromSmartContract();
+        monitor.info(format("[%s] fetched %s Contracts from Smart Contract", this.getClass().getSimpleName(), contractDefinitionResponseDtoList.size()));
+
+        List<ContractOffer> contractOfferList = new ArrayList<>();
+
+        for (ContractDefinitionResponseDto contract : contractDefinitionResponseDtoList) {
+            // TODO: check if operand left is "asset:prop:id"
+            String assetId = contract.getCriteria().stream().findFirst().get().getOperandRight().toString();
+            String policyId = contract.getContractPolicyId();
+
+            AssetEntryDto assetEntryDto = null;
+            PolicyDefinitionResponseDto policyDefinitionResponseDto = null;
+
+            for (AssetEntryDto a: assetEntryDtoList) {
+                if(a.getAsset().getId().equals(assetId)) {
+                    assetEntryDto = a;
+                }
+            }
+
+            for (PolicyDefinitionResponseDto p: policyDefinitionResponseDtoList) {
+                if(p.getId().equals(policyId)) {
+                    policyDefinitionResponseDto = p;
+                }
+            }
+
+            if(assetEntryDto == null || policyDefinitionResponseDto == null) {
+                monitor.severe(String.format("[%s] Not able to find the Asset with id %s or policy with id %s for the contract %s", this.getClass().getSimpleName(), assetId, policyId, contract.getId()));
+                continue;
+            }
+
+            Asset asset = Asset.Builder.newInstance().id(assetEntryDto.getAsset().getId()).properties(assetEntryDto.getAsset().getProperties()).build();
+            Policy policy = Policy.Builder.newInstance()
+                    .target(policyDefinitionResponseDto.getPolicy().getTarget())
+                    .assignee(policyDefinitionResponseDto.getPolicy().getAssignee())
+                    .assigner(policyDefinitionResponseDto.getPolicy().getAssigner())
+                    .prohibitions(policyDefinitionResponseDto.getPolicy().getProhibitions())
+                    .permissions(policyDefinitionResponseDto.getPolicy().getPermissions())
+                    .extensibleProperties(policyDefinitionResponseDto.getPolicy().getExtensibleProperties())
+                    .duties(policyDefinitionResponseDto.getPolicy().getObligations()).build();
+
+            ContractOffer contractOffer = ContractOffer.Builder.newInstance().asset(asset).policy(policy).id(contract.getId()).build();
+
+            contractOfferList.add(contractOffer);
+        }
+
+
 
         // var contract = ContractDefinition.Builder.newInstance().contractPolicyId(policy.getId()).accessPolicyId(policy.getId()).selectorExpression(AssetSelectorExpression.SELECT_ALL).build();
-        Asset asset = Asset.Builder.newInstance().id(assetDto.getAsset().getId()).properties(assetDto.getAsset().getProperties()).build();
-        Policy policy = Policy.Builder.newInstance()
-                .target(policyDto.getPolicy().getTarget())
-                .assignee(policyDto.getPolicy().getAssignee())
-                .assigner(policyDto.getPolicy().getAssigner())
-                .prohibitions(policyDto.getPolicy().getProhibitions())
-                .permissions(policyDto.getPolicy().getPermissions())
-                .extensibleProperties(policyDto.getPolicy().getExtensibleProperties())
-                .duties(policyDto.getPolicy().getObligations()).build();
 
-        ContractOffer contractOffer = ContractOffer.Builder.newInstance().asset(asset).policy(policy).id(UUID.randomUUID().toString()).build();
-        List<ContractOffer> contractOfferList = new ArrayList<>();
-        contractOfferList.add(contractOffer);
+
         Catalog catalog = Catalog.Builder.newInstance().contractOffers(contractOfferList).id(UUID.randomUUID().toString()).build();
         var updateResponse = new UpdateResponse("localhost", catalog);
-        monitor.info("Trying now to artifically insert newly created contraft offer: " + contractOffer.getId());
+        monitor.info("Trying now to artifically insert newly created multiple contract offers: " + catalog.getContractOffers().size());
         successHandler.accept(updateResponse);
+
+        contractOfferListFromStorage = (List<ContractOffer>) store.query(queryList);
+        monitor.info(format("Fetched %d enties from local cataloge storage", contractOfferListFromStorage.size()));
 
     }
 
@@ -202,6 +256,11 @@ public class BlockchainExecutionManager {
             Objects.requireNonNull(instance.nodeQueryAdapterRegistry, "BlockchainExecutionManager.Builder: nodeQueryAdapterRegistry cannot be null");
             Objects.requireNonNull(instance.directory, "BlockchainExecutionManager.Builder: nodeDirectory cannot be null");
             return instance;
+        }
+
+        public BlockchainExecutionManager.Builder nodeStore(FederatedCacheStore store) {
+            instance.store = store;
+            return this;
         }
     }
 
