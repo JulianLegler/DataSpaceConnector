@@ -149,7 +149,10 @@ public class BlockchainHelper {
                      tokenziedContractList = mapper.readValue(sb.toString(), new TypeReference<List<TokenizedContract>>(){});
 
                     for (TokenizedContract tokenizedContract: tokenziedContractList) {
-                        contractDefinitionResponseDtoList.add(tokenizedContract.getTokenData());
+                        if(tokenizedContract != null) {
+                            contractDefinitionResponseDtoList.add(tokenizedContract.getTokenData());
+                        }
+
                     }
 
                     return contractDefinitionResponseDtoList;
@@ -248,7 +251,10 @@ public class BlockchainHelper {
                     tokenziedAssetList = mapper.readValue(sb.toString(), new TypeReference<List<TokenziedAsset>>(){});
 
                     for (TokenziedAsset tokenziedAsset: tokenziedAssetList) {
-                        assetResponseDtoList.add(tokenziedAsset.getTokenData());
+                        if(tokenziedAsset != null) {
+                            assetResponseDtoList.add(tokenziedAsset.getTokenData());
+                        }
+
                     }
 
                     return assetResponseDtoList;
@@ -303,7 +309,9 @@ public class BlockchainHelper {
                     tokenizedPolicyDefinitionList = mapper.readValue(sb.toString(), new TypeReference<List<TokenizedPolicyDefinition>>(){});
 
                     for (TokenizedPolicyDefinition tokenizedPolicyDefinition: tokenizedPolicyDefinitionList) {
-                        policyDefinitionResponseDtoList.add(tokenizedPolicyDefinition.getTokenData());
+                        if(tokenizedPolicyDefinition != null) {
+                            policyDefinitionResponseDtoList.add(tokenizedPolicyDefinition.getTokenData());
+                        }
                     }
 
                     return policyDefinitionResponseDtoList;

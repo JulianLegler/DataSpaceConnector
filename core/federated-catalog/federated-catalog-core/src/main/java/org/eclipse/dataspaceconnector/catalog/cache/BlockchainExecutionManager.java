@@ -70,6 +70,7 @@ public class BlockchainExecutionManager {
         ArrayList<Criterion> queryList = new ArrayList<>();
         queryList.add(criterion);
         queryList.add(criterion1);
+
         List<ContractOffer> contractOfferListFromStorage = (List<ContractOffer>) store.query(queryList);
         monitor.info(format("Fetched %d enties from local cataloge storage", contractOfferListFromStorage.size()));
 
@@ -195,7 +196,7 @@ public class BlockchainExecutionManager {
     }
 
     private String message(String input) {
-        return "ExecutionManager: " + input;
+        return "[BlockchainExecutionManager]: " + input;
     }
 
 
