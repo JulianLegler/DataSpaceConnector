@@ -54,8 +54,8 @@ public class CacheConfiguration {
     public ExecutionPlan getExecutionPlan() {
         var periodSeconds = context.getSetting(EXECUTION_PLAN_PERIOD_SECONDS, DEFAULT_EXECUTION_PERIOD_SECONDS);
         var setting = context.getSetting(EXECUTION_PLAN_DELAY_SECONDS, null);
-        int initialDelaySeconds;
-        if ("random".equals(setting) || setting == null) {
+        int initialDelaySeconds = 0;
+        /*if ("random".equals(setting) || setting == null) {
             initialDelaySeconds = randomSeconds();
         } else {
             try {
@@ -63,7 +63,7 @@ public class CacheConfiguration {
             } catch (NumberFormatException ex) {
                 initialDelaySeconds = 0;
             }
-        }
+        }*/
         var monitor = context.getMonitor();
         if (periodSeconds < LOW_EXECUTION_PERIOD_SECONDS_THRESHOLD) {
             monitor.warning(format("An execution period of %d seconds is very low (threshold = %d). This might result in the work queue to be ever growing." +

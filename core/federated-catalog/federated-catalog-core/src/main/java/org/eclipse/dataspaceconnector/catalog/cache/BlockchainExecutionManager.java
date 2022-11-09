@@ -93,7 +93,11 @@ public class BlockchainExecutionManager {
 
         for (ContractDefinitionResponseDto contract : contractDefinitionResponseDtoList) {
             // TODO: check if operand left is "asset:prop:id"
-            String assetId = contract.getCriteria().stream().findFirst().get().getOperandRight().toString();
+
+            String assetId = String.valueOf(contract.getCriteria().get(0).getOperandRight());
+            if(contract.getCriteria().get(0).getOperandRight() instanceof ArrayList) {
+                assetId =  String.valueOf(((ArrayList<?>)contract.getCriteria().get(0).getOperandRight()).get(0)); // WHAT THE FUCK WARUM MUSS ICH DAS HIER TUN WENN DIE ÜBER DAS EDC DASHBOARD ERSTELLT WERDEN?!?=?!
+            }
             String policyId = contract.getContractPolicyId();
 
             AssetEntryDto assetEntryDto = null;
