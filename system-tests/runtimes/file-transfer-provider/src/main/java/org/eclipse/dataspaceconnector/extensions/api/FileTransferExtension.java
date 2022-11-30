@@ -59,11 +59,11 @@ public class FileTransferExtension implements ServiceExtension {
         var sinkFactory = new FileTransferDataSinkFactory(monitor, telemetry, executorContainer.getExecutorService(), 5);
         pipelineService.registerFactory(sinkFactory);
 
-        var policy = createPolicy();
-        policyStore.save(policy);
+        //var policy = createPolicy();
+        //policyStore.save(policy);
 
-        registerDataEntries(context);
-        registerContractDefinition(policy.getUid());
+        //registerDataEntries(context);
+        //registerContractDefinition(policy.getUid());
 
         context.getMonitor().info("File Transfer Extension initialized!");
     }
