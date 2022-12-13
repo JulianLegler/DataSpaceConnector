@@ -6,24 +6,18 @@ import org.eclipse.dataspaceconnector.api.datamanagement.policy.model.PolicyDefi
 import org.eclipse.dataspaceconnector.catalog.cache.crawler.CatalogCrawler;
 import org.eclipse.dataspaceconnector.catalog.spi.*;
 import org.eclipse.dataspaceconnector.catalog.spi.model.ExecutionPlan;
-import org.eclipse.dataspaceconnector.catalog.spi.model.UpdateRequest;
 import org.eclipse.dataspaceconnector.catalog.spi.model.UpdateResponse;
 import org.eclipse.dataspaceconnector.extensions.listener.BlockchainHelper;
 import org.eclipse.dataspaceconnector.policy.model.Policy;
-import org.eclipse.dataspaceconnector.spi.EdcException;
-import org.eclipse.dataspaceconnector.spi.asset.AssetSelectorExpression;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.query.Criterion;
 import org.eclipse.dataspaceconnector.spi.types.domain.asset.Asset;
 import org.eclipse.dataspaceconnector.spi.types.domain.catalog.Catalog;
-import org.eclipse.dataspaceconnector.spi.types.domain.contract.offer.ContractDefinition;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.offer.ContractOffer;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -80,74 +74,102 @@ public class BlockchainExecutionManager {
         List<PolicyDefinitionResponseDto> policyDefinitionResponseDtoList = BlockchainHelper.getAllPolicyDefinitionsFromSmartContract();
         monitor.info(String.format("[%s] fetched %d Policies from Smart Contract", this.getClass().getSimpleName(), policyDefinitionResponseDtoList.size()));
 
-        //AssetEntryDto assetDto = BlockchainHelper.getAssetWithIdFromSmartContract("26");
-        //monitor.info(String.format("[%s] fetched Asset %s from Smart Contract", this.getClass().getSimpleName(), assetDto.getAsset().getId()));
-
-        //PolicyDefinitionResponseDto policyDto = BlockchainHelper.getPolicyWithIdFromSmartContract("4");
-        //monitor.info(String.format("[%s] fetched Policy %s from Smart Contract", this.getClass().getSimpleName(), policyDto.getId()));
-
         List<ContractDefinitionResponseDto> contractDefinitionResponseDtoList = BlockchainHelper.getAllContractDefinitionsFromSmartContract();
+
+        HashMap<String, List<ContractDefinitionResponseDto>> contractDefinitionResponseDtoGroupedBySource = BlockchainHelper.getAllContractDefinitionsFromSmartContractGroupedBySource();
+
+
+
         monitor.info(format("[%s] fetched %s Contracts from Smart Contract", this.getClass().getSimpleName(), contractDefinitionResponseDtoList.size()));
 
-        List<ContractOffer> contractOfferList = new ArrayList<>();
+        // iterate over all sources of contractDefinitionResponseDtoGroupedBySource and fetch all contracts for each source
+        for (Map.Entry<String, List<ContractDefinitionResponseDto>> entry : contractDefinitionResponseDtoGroupedBySource.entrySet()) {
+        	monitor.info(format("[%s] fetching contracts for source %s", this.getClass().getSimpleName(), entry.getKey()));
 
-        for (ContractDefinitionResponseDto contract : contractDefinitionResponseDtoList) {
-            // TODO: check if operand left is "asset:prop:id"
+            List<ContractOffer> contractOfferList = new ArrayList<>();
+        	List<ContractDefinitionResponseDto> contractDefinitionResponseDtoListForSource = entry.getValue();
 
-            String assetId = String.valueOf(contract.getCriteria().get(0).getOperandRight());
-            if(contract.getCriteria().get(0).getOperandRight() instanceof ArrayList) {
-                assetId =  String.valueOf(((ArrayList<?>)contract.getCriteria().get(0).getOperandRight()).get(0)); // WHAT THE FUCK WARUM MUSS ICH DAS HIER TUN WENN DIE ÜBER DAS EDC DASHBOARD ERSTELLT WERDEN?!?=?!
-            }
-            String policyId = contract.getContractPolicyId();
+        	// iterate over all contracts for a source
+        	for (ContractDefinitionResponseDto contract : contractDefinitionResponseDtoListForSource) {
 
-            AssetEntryDto assetEntryDto = null;
-            PolicyDefinitionResponseDto policyDefinitionResponseDto = null;
+        		monitor.info(format("[%s] fetching contract %s", this.getClass().getSimpleName(), contract.getId()));
 
-            for (AssetEntryDto a: assetEntryDtoList) {
-                if(a.getAsset().getId().equals(assetId)) {
-                    assetEntryDto = a;
-                }
-            }
+                ContractOffer contractOffer = getContractOfferFromContractDefinitionDto(contract, assetEntryDtoList, policyDefinitionResponseDtoList);
+        		contractOfferList.add(contractOffer);
+        	}
 
-            for (PolicyDefinitionResponseDto p: policyDefinitionResponseDtoList) {
-                if(p.getId().equals(policyId)) {
-                    policyDefinitionResponseDto = p;
-                }
-            }
-
-            if(assetEntryDto == null || policyDefinitionResponseDto == null) {
-                monitor.severe(String.format("[%s] Not able to find the Asset with id %s or policy with id %s for the contract %s", this.getClass().getSimpleName(), assetId, policyId, contract.getId()));
-                continue;
-            }
-
-            Asset asset = Asset.Builder.newInstance().id(assetEntryDto.getAsset().getId()).properties(assetEntryDto.getAsset().getProperties()).build();
-            Policy policy = Policy.Builder.newInstance()
-                    .target(policyDefinitionResponseDto.getPolicy().getTarget())
-                    .assignee(policyDefinitionResponseDto.getPolicy().getAssignee())
-                    .assigner(policyDefinitionResponseDto.getPolicy().getAssigner())
-                    .prohibitions(policyDefinitionResponseDto.getPolicy().getProhibitions())
-                    .permissions(policyDefinitionResponseDto.getPolicy().getPermissions())
-                    .extensibleProperties(policyDefinitionResponseDto.getPolicy().getExtensibleProperties())
-                    .duties(policyDefinitionResponseDto.getPolicy().getObligations()).build();
-
-            ContractOffer contractOffer = ContractOffer.Builder.newInstance().asset(asset).policy(policy).id(contract.getId()).build();
-
-            contractOfferList.add(contractOffer);
+            Catalog catalog = Catalog.Builder.newInstance().contractOffers(contractOfferList).id(UUID.randomUUID().toString()).build();
+            var updateResponse = new UpdateResponse(entry.getKey(), catalog);
+            monitor.info("Trying now to artifically insert newly created multiple contract offers from " + entry.getKey() + " : " + catalog.getContractOffers().size());
+            successHandler.accept(updateResponse);
         }
 
 
 
-        // var contract = ContractDefinition.Builder.newInstance().contractPolicyId(policy.getId()).accessPolicyId(policy.getId()).selectorExpression(AssetSelectorExpression.SELECT_ALL).build();
-
-
-        Catalog catalog = Catalog.Builder.newInstance().contractOffers(contractOfferList).id(UUID.randomUUID().toString()).build();
-        var updateResponse = new UpdateResponse("localhost", catalog);
-        monitor.info("Trying now to artifically insert newly created multiple contract offers: " + catalog.getContractOffers().size());
-        successHandler.accept(updateResponse);
-
         contractOfferListFromStorage = (List<ContractOffer>) store.query(queryList);
-        monitor.info(format("Fetched %d enties from local cataloge storage", contractOfferListFromStorage.size()));
+        // count number of contract offers with unique contract.provider URIs
+        int count = (int) contractOfferListFromStorage.stream().map(ContractOffer::getProvider).distinct().count();
+        monitor.info(format("Fetched %d offers by %d unique providers from local cataloge storage", contractOfferListFromStorage.size(), count));
 
+
+    }
+
+    /**
+     * Connecting the actual Asset Objects with Policy Objects to the ContractOffer Object
+     * @param contract the contract to be created
+     * @param assetEntryDtoList the list of all existing assets in the blockchain
+     * @param policyDefinitionResponseDtoList the list of all existing policies in the blockchain
+     * @return ContractOffer created from combining the Asset and Policy Objects identified by the ids in the ContractDefinitionResponseDto, null if not found
+     */
+    private ContractOffer getContractOfferFromContractDefinitionDto(ContractDefinitionResponseDto contract, List<AssetEntryDto> assetEntryDtoList, List<PolicyDefinitionResponseDto> policyDefinitionResponseDtoList) {
+        String assetId = String.valueOf(contract.getCriteria().get(0).getOperandRight());
+        if(contract.getCriteria().get(0).getOperandRight() instanceof ArrayList) {
+            assetId =  String.valueOf(((ArrayList<?>)contract.getCriteria().get(0).getOperandRight()).get(0)); // WHAT THE FUCK WARUM MUSS ICH DAS HIER TUN WENN DIE ÜBER DAS EDC DASHBOARD ERSTELLT WERDEN?!?=?!
+        }
+        String policyId = contract.getContractPolicyId();
+
+        AssetEntryDto assetEntryDto = null;
+        PolicyDefinitionResponseDto policyDefinitionResponseDto = null;
+
+        assetEntryDto = getAssetById(assetId, assetEntryDtoList);
+
+        policyDefinitionResponseDto = getPolicyById(policyId, policyDefinitionResponseDtoList);
+
+
+
+        if(assetEntryDto == null || policyDefinitionResponseDto == null) {
+            monitor.severe(String.format("[%s] Not able to find the Asset with id %s or policy with id %s for the contract %s", this.getClass().getSimpleName(), assetId, policyId, contract.getId()));
+            return null;
+        }
+
+        Asset asset = Asset.Builder.newInstance().id(assetEntryDto.getAsset().getId()).properties(assetEntryDto.getAsset().getProperties()).build();
+        Policy policy = Policy.Builder.newInstance()
+                .target(policyDefinitionResponseDto.getPolicy().getTarget())
+                .assignee(policyDefinitionResponseDto.getPolicy().getAssignee())
+                .assigner(policyDefinitionResponseDto.getPolicy().getAssigner())
+                .prohibitions(policyDefinitionResponseDto.getPolicy().getProhibitions())
+                .permissions(policyDefinitionResponseDto.getPolicy().getPermissions())
+                .extensibleProperties(policyDefinitionResponseDto.getPolicy().getExtensibleProperties())
+                .duties(policyDefinitionResponseDto.getPolicy().getObligations()).build();
+        return  ContractOffer.Builder.newInstance().asset(asset).policy(policy).id(contract.getId()).build();
+    }
+
+    private PolicyDefinitionResponseDto getPolicyById(String policyId, List<PolicyDefinitionResponseDto> policyDefinitionResponseDtoList) {
+        for (PolicyDefinitionResponseDto p: policyDefinitionResponseDtoList) {
+            if(p.getId().equals(policyId)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    private AssetEntryDto getAssetById(String assetId, List<AssetEntryDto> assetEntryDtoList) {
+        for (AssetEntryDto a: assetEntryDtoList) {
+            if(a.getAsset().getId().equals(assetId)) {
+                return a;
+            }
+        }
+        return null;
     }
 
     private void runPostExecution() {

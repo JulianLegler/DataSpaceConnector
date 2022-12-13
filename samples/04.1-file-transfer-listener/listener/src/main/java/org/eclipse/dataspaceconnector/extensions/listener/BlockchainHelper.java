@@ -18,6 +18,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class BlockchainHelper {
@@ -156,6 +157,74 @@ public class BlockchainHelper {
                     }
 
                     return contractDefinitionResponseDtoList;
+            }
+
+
+        } catch (MalformedURLException ex) {
+            System.out.println(ex);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        } finally {
+            if (c != null) {
+                try {
+                    c.disconnect();
+                } catch (Exception ex) {
+                    System.out.println(ex);
+                }
+            }
+        }
+        return null;
+    }
+
+
+
+    /**
+     * @return HashMap of Source URIs and Lists of ContractDefinitionResponseDto
+     */
+    public static HashMap<String, List<ContractDefinitionResponseDto>> getAllContractDefinitionsFromSmartContractGroupedBySource() {
+        HashMap<String, List<ContractDefinitionResponseDto>> returnMap = new HashMap<>();
+        ContractDefinitionResponseDto contractDefinitionResponseDto = null;
+        ObjectMapper mapper = new ObjectMapper();
+
+        List<TokenizedContract> tokenziedContractList = new ArrayList<>();
+        List<ContractDefinitionResponseDto> contractDefinitionResponseDtoList = new ArrayList<>();
+
+        HttpURLConnection c = null;
+        try {
+            URL u = new URL("http://localhost:3000/all/contract");
+            c = (HttpURLConnection) u.openConnection();
+            c.setRequestMethod("GET");
+            c.setRequestProperty("Content-length", "0");
+            c.setUseCaches(false);
+            c.setAllowUserInteraction(false);
+            c.connect();
+            int status = c.getResponseCode();
+
+            switch (status) {
+                case 200:
+                case 201:
+                    BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line+"\n");
+                    }
+                    br.close();
+
+                    tokenziedContractList = mapper.readValue(sb.toString(), new TypeReference<List<TokenizedContract>>(){});
+
+                    for (TokenizedContract tokenizedContract: tokenziedContractList) {
+                        if(tokenizedContract != null) {
+                            // add to returnMap with source as key
+                            if(!returnMap.containsKey(tokenizedContract.getSource())) {
+                                returnMap.put(tokenizedContract.getSource(), new ArrayList<>());
+                            }
+                            returnMap.get(tokenizedContract.getSource()).add(tokenizedContract.getTokenData());
+                        }
+
+                    }
+
+                    return returnMap;
             }
 
 

@@ -8,6 +8,16 @@ public class TokenizedContract {
     String decimals;
     ContractDefinitionResponseDto tokenData;
 
+    String source;
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
     public String getToken_id() {
         return token_id;
     }
