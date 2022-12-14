@@ -74,6 +74,9 @@ public class TransferListenerExtension implements ServiceExtension {
 
         policyObservable.registerListener(new BlockchainPolicyCreator(monitor));
 
-        contractObservable.registerListener(new BlockchainContractCreator(monitor));
+        String idsWebhookAddress = context.getSetting("ids.webhook.address", "http://localhost:8282");
+        // append /api/v1/ids/data to the webhook address to get the IDS data endpoint
+        idsWebhookAddress = idsWebhookAddress + "/api/v1/ids/data";
+        contractObservable.registerListener(new BlockchainContractCreator(monitor, idsWebhookAddress));
     }
 }

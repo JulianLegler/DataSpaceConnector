@@ -2,15 +2,11 @@ package org.eclipse.dataspaceconnector.extensions.listener;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.dataspaceconnector.api.datamanagement.asset.model.AssetEntryDto;
-import org.eclipse.dataspaceconnector.api.datamanagement.asset.model.AssetRequestDto;
-import org.eclipse.dataspaceconnector.api.datamanagement.asset.model.DataAddressDto;
 import org.eclipse.dataspaceconnector.api.datamanagement.contractdefinition.model.ContractDefinitionResponseDto;
 import org.eclipse.dataspaceconnector.api.model.CriterionDto;
 import org.eclipse.dataspaceconnector.spi.contract.definition.observe.ContractDefinitionListener;
 import org.eclipse.dataspaceconnector.spi.monitor.Monitor;
 import org.eclipse.dataspaceconnector.spi.query.Criterion;
-import org.eclipse.dataspaceconnector.spi.types.domain.DataAddress;
 import org.eclipse.dataspaceconnector.spi.types.domain.contract.offer.ContractDefinition;
 
 import java.util.LinkedList;
@@ -19,8 +15,10 @@ import java.util.List;
 public class BlockchainContractCreator implements ContractDefinitionListener {
 
     private final Monitor monitor;
-    public BlockchainContractCreator(Monitor monitor) {
+    private final String idsWebhookAddress;
+    public BlockchainContractCreator(Monitor monitor, String idsWebhookAddress) {
         this.monitor = monitor;
+        this.idsWebhookAddress = idsWebhookAddress;
     }
 
     @Override
@@ -60,6 +58,9 @@ public class BlockchainContractCreator implements ContractDefinitionListener {
                 .id(contractDefinition.getId())
                 .criteria(criterionDtoList).build();
 
+        TokenizedContractDefinitionResponse tokenizedContractDefinitionResponse = new TokenizedContractDefinitionResponse();
+        tokenizedContractDefinitionResponse.setTokenData(contractDefinitionResponseDto);
+        tokenizedContractDefinitionResponse.setSource(idsWebhookAddress);
 
         String jsonString = "";
         try {
